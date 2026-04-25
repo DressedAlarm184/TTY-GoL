@@ -23,28 +23,20 @@ void render() {
 
 void simulate() {
     memcpy(clone, board, sizeof(board));
-
     for (int y = 0; y < 20; y++) {
         for (int x = 0; x < 35; x++) {
-
             int n = 0;
-
             for (int ry = -1; ry <= 1; ry++) {
                 for (int rx = -1; rx <= 1; rx++) {
-
                     if (rx == 0 && ry == 0) continue;
-
                     int ny = y + ry;
                     int nx = x + rx;
-
                     if (ny < 0 || ny >= 20 || nx < 0 || nx >= 35)
                         continue;
-
                     if (clone[ny][nx])
                         n++;
                 }
             }
-
             if (clone[y][x]) {
                 if (n < 2 || n > 3)
                     board[y][x] = 0;
@@ -61,16 +53,26 @@ void simulate() {
 }
 
 int main() {
-    board[0][1] = 1;
-    board[1][2] = 1;
-    board[2][0] = 1;
-    board[2][1] = 1;
-    board[2][2] = 1;
+	render();
+
+	char input[64] = {0};
+
+    while (1) {
+		fgets(input, sizeof input, stdin);
+		if (strcmp(input, "start\n") == 0) {
+			break;
+		} else {
+			int x, y;
+			sscanf(input, "%d %d", &x, &y);
+			board[y - 1][x - 1] = !board[y - 1][x - 1];
+			render(); 
+		}
+	}
 
     while (1) {
         simulate();
         render();
-        usleep(300000);
+        usleep(150000);
     }
 
     return 0;
