@@ -1,22 +1,44 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <termios.h>
+#include <signal.h>
+#include <stdlib.h>
 
 char board[20][35] = {0};
 char clone[20][35] = {0};
 
-void render() {
+void handle_sigint(int sig) {
+    printf("\033[?1049l");
+	exit(0);
+}
+
+int getch() {
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+void render(int cx, int cy) {
     printf("\033[2J\033[H\n");
-	printf("    ........................................................................\n");
+	printf("    \x1b[97m........................................................................\n");
     for (int y = 0; y < 20; y++) {
-    	printf("    .");
+    	printf("    \x1b[97m.");
         for (int x = 0; x < 35; x++) {
-            if (board[y][x]) printf("██");
+			if (board[y][x] && cx == x && cy == y) printf("\x1b[38;5;245m██");
+            else if (board[y][x]) printf("\x1b[97m██");
+			else if (!board[y][x] && cx == x && cy == y) printf("\x1b[94m██");
             else printf("  ");
         }
-        printf(".\n");
+        printf("\x1b[97m.\n");
     }
-	printf("    ........................................................................\n");
+	printf("    \x1b[97m........................................................................\n");
     fflush(stdout);
 }
 
@@ -52,25 +74,25 @@ void simulate() {
 }
 
 int main() {
-	char input[64] = {0};
-    while (1) {
-    	render();
-        printf("    > ");
-		fgets(input, sizeof input, stdin);
-		if (strlen(input) == 1) continue;
-		if (strcmp(input, "start\n") == 0) {
-			break;
-		} else {
-			int x, y;
-			int matches = sscanf(input, "%d %d", &x, &y);
-            if (matches != 2) continue;
-            if (x > 35 || x < 1 || y < 1 || y > 20) continue;
-			board[y - 1][x - 1] = !board[y - 1][x - 1];
+	signal(SIGINT, handle_sigint);
+	printf("\033[?1049h");
+	int cursor_x = 0, cursor_y = 0;
+	while (1) {
+    	render(cursor_x, cursor_y);
+		char key = getch();
+		switch (key) {
+			case 'w': cursor_y--; if (cursor_y < 0) cursor_y = 0; break;
+			case 's': cursor_y++; if (cursor_y > 19) cursor_y = 19; break;
+			case 'a': cursor_x--; if (cursor_x < 0) cursor_x = 0; break;
+			case 'd': cursor_x++; if (cursor_x > 34) cursor_x = 34; break;
+			case 10: goto start; break;
+			case 32: board[cursor_y][cursor_x] = !board[cursor_y][cursor_x];
 		}
 	}
+	start:
     while (1) {
         simulate();
-        render();
+        render(-1, -1);
         usleep(150000);
     }
     return 0;
