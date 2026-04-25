@@ -1,2 +1,1 @@
-# TTY-GoL
-Conway's Game of Life but in the terminal
+This is Conway's Game of Life but it runs in the terminal! To build, run `gcc -o main main.c` and to run it, use `./main`. You can type one-indexed coordinates into the prompt to set or unset cells. The format is `<x> <y>`. Once that is complete, type `start` at the prompt to begin. It will complete one generation every 150 milliseconds. The grid is 35 cells by 20 cells. Any coordinates outside the grid range will be silently ignored.
