@@ -62,7 +62,9 @@ int main() {
 			break;
 		} else {
 			int x, y;
-			sscanf(input, "%d %d", &x, &y);
+			int matches = sscanf(input, "%d %d", &x, &y);
+            if (matches != 2) continue;
+            if (x > 35 || x < 1 || y < 1 || y > 20) continue;
 			board[y - 1][x - 1] = !board[y - 1][x - 1];
 		}
 	}
