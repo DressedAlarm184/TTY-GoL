@@ -7,6 +7,7 @@
 
 char board[20][35] = {0};
 char clone[20][35] = {0};
+int generation = 0;
 
 void handle_sigint(int sig) {
     printf("\033[?1049l");
@@ -27,7 +28,7 @@ int getch() {
 
 void render(int cx, int cy) {
     printf("\033[2J\033[H\n");
-	printf("    \x1b[97m........................................................................\n");
+	printf("    \x1b[97mGeneration: %d\n    ........................................................................\n", generation);
     for (int y = 0; y < 20; y++) {
     	printf("    \x1b[97m.");
         for (int x = 0; x < 35; x++) {
@@ -71,6 +72,7 @@ void simulate() {
             }
         }
     }
+	generation++;
 }
 
 int main() {
