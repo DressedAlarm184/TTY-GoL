@@ -53,27 +53,23 @@ void simulate() {
 }
 
 int main() {
-	render();
-
 	char input[64] = {0};
-
     while (1) {
+    	render();
 		fgets(input, sizeof input, stdin);
+		if (strlen(input) == 1) continue;
 		if (strcmp(input, "start\n") == 0) {
 			break;
 		} else {
 			int x, y;
 			sscanf(input, "%d %d", &x, &y);
 			board[y - 1][x - 1] = !board[y - 1][x - 1];
-			render(); 
 		}
 	}
-
     while (1) {
         simulate();
         render();
         usleep(150000);
     }
-
     return 0;
 }
