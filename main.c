@@ -6,18 +6,17 @@ char board[20][35] = {0};
 char clone[20][35] = {0};
 
 void render() {
-    printf("\033[2J\033[H");
-	printf("........................................................................\n");
+    printf("\033[2J\033[H\n");
+	printf("    ........................................................................\n");
     for (int y = 0; y < 20; y++) {
-    	printf(".");
+    	printf("    .");
         for (int x = 0; x < 35; x++) {
             if (board[y][x]) printf("██");
             else printf("  ");
         }
-        printf(".");
-        printf("\n");
+        printf(".\n");
     }
-	printf("........................................................................\n");
+	printf("    ........................................................................\n");
     fflush(stdout);
 }
 
@@ -56,6 +55,7 @@ int main() {
 	char input[64] = {0};
     while (1) {
     	render();
+        printf("    > ");
 		fgets(input, sizeof input, stdin);
 		if (strlen(input) == 1) continue;
 		if (strcmp(input, "start\n") == 0) {
