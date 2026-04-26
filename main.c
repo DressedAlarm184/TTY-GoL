@@ -8,25 +8,15 @@
 char board[30][45] = {0};
 char clone[30][45] = {0};
 int generation = 0, size = 0, speed = 150;
+struct termios oldt, newt;
 
 #define W (size == 0 ? 35 : 45)
 #define H (size == 0 ? 20 : 30)
 
-void handle_sigint(int sig) {
+void cleanup() {
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     write(1, "\033[?1049l", 8);
 	exit(0);
-}
-
-int getch() {
-    struct termios oldt, newt;
-    int ch;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return ch;
 }
 
 void render(int cx, int cy) {
@@ -81,12 +71,15 @@ void simulate() {
 }
 
 int main() {
-	signal(SIGINT, handle_sigint);
+	signal(SIGINT, cleanup);
+	tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt, newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	printf("\033[?1049h\033[2J");
 	int cursor_x = 0, cursor_y = 0;
 	while (1) {
     	render(cursor_x, cursor_y);
-		char key = getch();
+		char key = getchar();
 		switch (key) {
 			case 'w': cursor_y--; if (cursor_y < 0) cursor_y = 0; break;
 			case 's': cursor_y++; if (cursor_y > H - 1) cursor_y = H - 1; break;
