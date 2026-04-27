@@ -15,7 +15,7 @@ struct termios oldt, newt;
 
 void cleanup() {
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    write(1, "\033[?1049l", 8);
+    write(1, "\033[?1049l\033[?25h", 8);
 	exit(0);
 }
 
@@ -75,7 +75,7 @@ int main() {
 	tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt, newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-	printf("\033[?1049h\033[2J");
+	printf("\033[?1049h\033[2J\033[?25l");
 	int cursor_x = 0, cursor_y = 0;
 	while (1) {
     	render(cursor_x, cursor_y);
@@ -96,6 +96,10 @@ int main() {
         simulate();
         render(-1, -1);
         usleep(speed * 1000);
+		if (memcmp(board, clone, sizeof(board)) == 0) break;
     }
+	printf("    Press any key to exit...");
+	getchar();
+	cleanup();
     return 0;
 }
