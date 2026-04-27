@@ -15,7 +15,7 @@ struct termios oldt, newt;
 
 void cleanup() {
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    write(1, "\033[?1049l\033[?25h", 8);
+    write(1, "\033[?1049l\033[?25h", 14);
 	exit(0);
 }
 
@@ -87,7 +87,16 @@ int main() {
 			case 'd': cursor_x++; if (cursor_x > W - 1) cursor_x = W - 1; break;
 			case  10: goto start; break;
 			case ' ': board[cursor_y][cursor_x] = !board[cursor_y][cursor_x]; break;
-			case 'o': size = !size; printf("\033[2J"); break;
+			case 'o': {
+				printf("    Reset board and change size? [Y/N]");
+				char ch = getchar();
+				if (ch == 'Y' || ch == 'y') {
+					size = !size;
+					memset(board, 0, sizeof board);
+				}
+				printf("\033[2J");
+				break;
+			}
 			case 'p': speed += 50; if (speed > 500) speed = 50; break;
 		}
 	}
@@ -96,7 +105,7 @@ int main() {
         simulate();
         render(-1, -1);
         usleep(speed * 1000);
-		if (memcmp(board, clone, sizeof(board)) == 0) break;
+		if (memcmp(board, clone, sizeof board) == 0) break;
     }
 	printf("    Press any key to exit...");
 	getchar();
