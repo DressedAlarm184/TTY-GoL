@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -13,9 +14,14 @@ struct termios oldt, newt;
 #define W (size == 0 ? 35 : 45)
 #define H (size == 0 ? 20 : 30)
 
+#define printff(...) do { \
+    printf(__VA_ARGS__); \
+    fflush(stdout); \
+} while(0)
+
 void cleanup() {
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	write(1, "\033[?1049l\033[?25h", 14);
+	printff("\033[?1049l\033[?25h");
 	exit(0);
 }
 
@@ -72,18 +78,19 @@ void simulate() {
 
 void checkdone() {
 	if (memcmp(board, clone, sizeof board) == 0) {
-		printf("    Press any key to exit...");
+		printff("    Press any key to exit...");
 		getchar();
 		cleanup();
 	};
 }
 
 void initialize() {
+	setvbuf(stdout, NULL, _IOFBF, 65536);
 	tcgetattr(STDIN_FILENO, &oldt);
 	newt = oldt, newt.c_lflag &= ~(ICANON | ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	signal(SIGINT, cleanup);
-	printf("\033[?1049h\033[2J\033[?25l");
+	printff("\033[?1049h\033[2J\033[?25l");
 }
 
 void editor() {
@@ -99,20 +106,21 @@ void editor() {
 			case  10: return; break;
 			case ' ': board[cursor_y][cursor_x] = !board[cursor_y][cursor_x]; break;
 			case 'o': {
-				printf("    Reset board and change size? [Y/N]");
+				printff("    Reset board and change size? [Y/N]");
 				char ch = getchar();
 				if (ch == 'Y' || ch == 'y') {
 					size = !size;
 					memset(board, 0, sizeof board);
+					cursor_x = 0, cursor_y = 0;
 				}
-				printf("\033[2J");
+				printff("\033[2J");
 				break;
 			}
 			case 'r': {
-				printf("    Reset board? [Y/N]");
+				printff("    Reset board? [Y/N]");
 				char ch = getchar();
 				if (ch == 'Y' || ch == 'y') memset(board, 0, sizeof board);
-				printf("\033[2J");
+				printff("\033[2J");
 				break;
 			}
 			case 'p': speed += 50; if (speed > 500) speed = 50; break;
