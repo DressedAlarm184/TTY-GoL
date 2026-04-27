@@ -15,77 +15,88 @@ struct termios oldt, newt;
 
 void cleanup() {
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    write(1, "\033[?1049l\033[?25h", 14);
+	write(1, "\033[?1049l\033[?25h", 14);
 	exit(0);
 }
 
 void render(int cx, int cy) {
-    printf("\033[H\n\x1b[97m    Generation: %d <> Size: %s <> Speed: %d ms       \n    ", generation, size ? "45x30" : "35x20", speed);
+	printf("\033[H\n\x1b[97m    Generation: %d <> Size: %s <> Speed: %d ms       \n    ", generation, size ? "45x30" : "35x20", speed);
 	if (size) printf("╔══════════════════════════════════════════════════════════════════════════════════════════╗\n");
 	else printf("╔══════════════════════════════════════════════════════════════════════╗\n");
-    for (int y = 0; y < H; y++) {
-    	printf("    \x1b[97m║");
-        for (int x = 0; x < W; x++) {
+	for (int y = 0; y < H; y++) {
+		printf("    \x1b[97m║");
+		for (int x = 0; x < W; x++) {
 			if (board[y][x] && cx == x && cy == y) printf("\x1b[38;5;245m██");
-            else if (board[y][x]) printf("\x1b[97m██");
+			else if (board[y][x]) printf("\x1b[97m██");
 			else if (!board[y][x] && cx == x && cy == y) printf("\x1b[94m██");
-            else printf("  ");
-        }
-        printf("\x1b[97m║\n");
-    }
+			else printf("  ");
+		}
+		printf("\x1b[97m║\n");
+	}
 	if (size)  printf("    \x1b[97m╚══════════════════════════════════════════════════════════════════════════════════════════╝\n");
 	else printf("    \x1b[97m╚══════════════════════════════════════════════════════════════════════╝\n");
-    fflush(stdout);
+	fflush(stdout);
 }
 
 void simulate() {
-    memcpy(clone, board, sizeof(board));
-    for (int y = 0; y < H; y++) {
-        for (int x = 0; x < W; x++) {
-            int n = 0;
-            for (int ry = -1; ry <= 1; ry++) {
-                for (int rx = -1; rx <= 1; rx++) {
-                    if (rx == 0 && ry == 0) continue;
-                    int ny = y + ry;
-                    int nx = x + rx;
-                    if (ny < 0 || ny >= H || nx < 0 || nx >= W)
-                        continue;
-                    if (clone[ny][nx])
-                        n++;
-                }
-            }
-            if (clone[y][x]) {
-                if (n < 2 || n > 3)
-                    board[y][x] = 0;
-                else
-                    board[y][x] = 1;
-            } else {
-                if (n == 3)
-                    board[y][x] = 1;
-                else
-                    board[y][x] = 0;
-            }
-        }
-    }
+	memcpy(clone, board, sizeof(board));
+	for (int y = 0; y < H; y++) {
+		for (int x = 0; x < W; x++) {
+			int n = 0;
+			for (int ry = -1; ry <= 1; ry++) {
+				for (int rx = -1; rx <= 1; rx++) {
+					if (rx == 0 && ry == 0) continue;
+					int ny = y + ry;
+					int nx = x + rx;
+					if (ny < 0 || ny >= H || nx < 0 || nx >= W)
+						continue;
+					if (clone[ny][nx])
+						n++;
+				}
+			}
+			if (clone[y][x]) {
+				if (n < 2 || n > 3)
+					board[y][x] = 0;
+				else
+					board[y][x] = 1;
+			} else {
+				if (n == 3)
+					board[y][x] = 1;
+				else
+					board[y][x] = 0;
+			}
+		}
+	}
 	generation++;
 }
 
-int main() {
-	signal(SIGINT, cleanup);
+void checkdone() {
+	if (memcmp(board, clone, sizeof board) == 0) {
+		printf("    Press any key to exit...");
+		getchar();
+		cleanup();
+	};
+}
+
+void initialize() {
 	tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt, newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	newt = oldt, newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	signal(SIGINT, cleanup);
 	printf("\033[?1049h\033[2J\033[?25l");
+}
+
+void editor() {
 	int cursor_x = 0, cursor_y = 0;
 	while (1) {
-    	render(cursor_x, cursor_y);
+		render(cursor_x, cursor_y);
 		char key = getchar();
 		switch (key) {
 			case 'w': cursor_y--; if (cursor_y < 0) cursor_y = 0; break;
 			case 's': cursor_y++; if (cursor_y > H - 1) cursor_y = H - 1; break;
 			case 'a': cursor_x--; if (cursor_x < 0) cursor_x = 0; break;
 			case 'd': cursor_x++; if (cursor_x > W - 1) cursor_x = W - 1; break;
-			case  10: goto start; break;
+			case  10: return; break;
 			case ' ': board[cursor_y][cursor_x] = !board[cursor_y][cursor_x]; break;
 			case 'o': {
 				printf("    Reset board and change size? [Y/N]");
@@ -97,18 +108,28 @@ int main() {
 				printf("\033[2J");
 				break;
 			}
+			case 'r': {
+				printf("    Reset board? [Y/N]");
+				char ch = getchar();
+				if (ch == 'Y' || ch == 'y') memset(board, 0, sizeof board);
+				printf("\033[2J");
+				break;
+			}
 			case 'p': speed += 50; if (speed > 500) speed = 50; break;
 		}
 	}
-	start:
-    while (1) {
-        simulate();
-        render(-1, -1);
-        usleep(speed * 1000);
-		if (memcmp(board, clone, sizeof board) == 0) break;
-    }
-	printf("    Press any key to exit...");
-	getchar();
-	cleanup();
-    return 0;
+}
+
+int main() {
+	initialize();
+	editor();
+
+	while (1) {
+		simulate();
+		render(-1, -1);
+		usleep(speed * 1000);
+		checkdone();
+	}
+
+	return 0;
 }
