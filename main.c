@@ -19,10 +19,12 @@ struct termios oldt, newt;
     fflush(stdout); \
 } while(0)
 
+#define fgetchar() (tcflush(STDIN_FILENO, TCIFLUSH), getchar())
+
 void cleanup() {
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	printff("\033[?1049l\033[?25h");
-	exit(0);
+	write(STDOUT_FILENO, "\033[?1049l\033[?25h", 14);
+	_exit(0);
 }
 
 void render(int cx, int cy) {
@@ -79,9 +81,9 @@ void simulate() {
 void checkdone() {
 	if (memcmp(board, clone, sizeof board) == 0) {
 		printff("    Press any key to exit...");
-		getchar();
+		fgetchar();
 		cleanup();
-	};
+	}
 }
 
 void initialize() {
@@ -97,17 +99,18 @@ void editor() {
 	int cursor_x = 0, cursor_y = 0;
 	while (1) {
 		render(cursor_x, cursor_y);
-		char key = getchar();
+		int key = getchar();
+		if (key == EOF) cleanup();
 		switch (key) {
 			case 'w': cursor_y--; if (cursor_y < 0) cursor_y = 0; break;
 			case 's': cursor_y++; if (cursor_y > H - 1) cursor_y = H - 1; break;
 			case 'a': cursor_x--; if (cursor_x < 0) cursor_x = 0; break;
 			case 'd': cursor_x++; if (cursor_x > W - 1) cursor_x = W - 1; break;
-			case  10: return; break;
+			case  10: case 13: return; break;
 			case ' ': board[cursor_y][cursor_x] = !board[cursor_y][cursor_x]; break;
 			case 'o': {
 				printff("    Reset board and change size? [Y/N]");
-				char ch = getchar();
+				int ch = fgetchar();
 				if (ch == 'Y' || ch == 'y') {
 					size = !size;
 					memset(board, 0, sizeof board);
@@ -118,7 +121,7 @@ void editor() {
 			}
 			case 'r': {
 				printff("    Reset board? [Y/N]");
-				char ch = getchar();
+				int ch = fgetchar();
 				if (ch == 'Y' || ch == 'y') memset(board, 0, sizeof board);
 				printff("\033[2J");
 				break;
